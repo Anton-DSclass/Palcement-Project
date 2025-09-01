@@ -1,0 +1,308 @@
+
+**************************************************************
+PLACEMENT PROJECT
+----------------------------------
+
+
+
+
+🔎 Step-by-Step Explanation
+1. Importing Libraries
+import mysql.connector
+from faker import Faker
+import random
+
+
+mysql.connector → Used to connect Python with MySQL database.
+
+Faker → Used to generate fake but realistic data (names, emails, companies, etc.).
+
+random → Used to generate random numbers (ages, scores, etc.).
+
+2. Create a Database
+init_conn = mysql.connector.connect(host="localhost", user="root", password="Anton@19801024", port=3306)
+init_cursor = init_conn.cursor()
+init_cursor.execute("CREATE DATABASE IF NOT EXISTS Placement_project")
+
+
+First, we connect to MySQL without selecting a database.
+
+Then, we create a new database called Placement_project (only if it does not already exist).
+
+3. Connect to Database
+conn = mysql.connector.connect(host="localhost", user="root", password="Anton@19801024", port=3306, database="Placement_project")
+cursor = conn.cursor()
+
+
+Now we connect directly to our new database Placement_project.
+
+4. Drop Old Tables (Clean Start)
+cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+cursor.execute("DROP TABLE IF EXISTS placements")
+cursor.execute("DROP TABLE IF EXISTS soft_skills")
+cursor.execute("DROP TABLE IF EXISTS programming_skills")
+cursor.execute("DROP TABLE IF EXISTS student_records")
+cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+
+We delete old tables (if they exist) so we always start fresh.
+
+FOREIGN_KEY_CHECKS = 0 → temporarily disables foreign key checks (needed because some tables depend on each other).
+
+5. Create Tables
+
+We create 4 tables:
+
+(a) student_records
+
+Stores basic student details.
+
+ID, name, age, gender, email, phone, course batch, city, graduation year.
+
+(b) programming_skills
+
+Stores coding-related performance.
+
+Language (Python, Java, C++), problems solved, projects, certifications, etc.
+
+(c) soft_skills
+
+Stores non-technical skills.
+
+Communication, teamwork, leadership, critical thinking, etc.
+
+(d) placements
+
+Stores placement details.
+
+Placement status (Placed / Not Placed), company, package, interview rounds, date, etc.
+
+6. Insert 500 Fake Students
+students = []
+for sid in range(1, 501):
+    name = faker.name()
+    age = random.randint(18, 25)
+    gender = random.choice(['Male', 'Female'])
+    email = faker.unique.email()
+    phone = int(faker.unique.msisdn()[0:10])
+    enroll = random.randint(2019, 2023)
+    batch = random.choice(['A1', 'B2', 'C3', 'D4'])
+    city = faker.city()
+    grad = enroll + 4
+    students.append((sid, name, age, gender, email, phone, enroll, batch, city, grad))
+
+
+Generates 500 students with realistic fake details.
+
+Each student is stored as a tuple (id, name, age, ...).
+
+7. Insert into programming_skills
+
+Each student gets random coding skill data. Example:
+
+Language = Python
+
+Problems solved = 200
+
+Mini projects = 3
+
+Certifications = 2
+
+Latest project score = 85.5
+
+8. Insert into soft_skills
+
+Each student gets ratings (1–10) in skills like:
+
+Communication = 7
+
+Teamwork = 6
+
+Leadership = 8
+
+9. Insert into placements
+
+Each student has either:
+
+Placed → with company name, package, placement date, interview rounds cleared.
+
+Not Placed → company/package/date = NULL.
+
+10. Save and Close
+conn.commit()
+cursor.close()
+conn.close()
+print("🎉 All data inserted and connection closed.")
+
+
+commit() → Saves all data permanently.
+
+close() → Closes the database connection.
+
+📊 Summary
+
+This project:
+
+Creates a Placement Management System database.
+
+Stores students, programming skills, soft skills, and placement details.
+
+Automatically generates 500 fake student profiles using Python.
+
+Helps in practicing SQL queries for real-world scenarios like:
+
+Who solved the most coding problems?
+
+Which batch has the highest placements?
+
+Do soft skills affect placement chances?
+
+
+
+
+******************************************************************************************************************************************************************************************
+***************************************************************************************************************************************************************************************
+
+
+
+SREAMLIT PROJECT
+--------------------------------
+
+
+
+
+
+🔎 Step-by-Step Explanation of Your Streamlit Code
+1. Importing Libraries
+import mysql.connector
+import pandas as pd
+import streamlit as st
+
+
+mysql.connector → Connect Python with MySQL.
+
+pandas → Handle SQL query results as DataFrames.
+
+streamlit → Build a web-based dashboard.
+
+2. Database Connection Functions
+def get_connection():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Anton@19801024",
+        port=3306,
+        database="Placement_project"
+    )
+
+
+This function connects to your Placement_project database.
+
+So whenever we need data, we just call get_connection().
+
+def execute_query(query, params=None):
+    conn = get_connection()
+    df = pd.read_sql(query, conn, params=params)
+    conn.close()
+    return df
+
+
+execute_query() → Runs SQL queries and returns results as a Pandas DataFrame.
+
+Makes it easy to display results in Streamlit.
+
+3. Streamlit App Title
+st.title("🎓 Student Placement Dashboard")
+
+
+Adds a nice title to your web app.
+
+4. Programming Language Filter
+st.subheader("📊 Programming Language - Student Details")
+st.sidebar.header("Filter")
+selected_language = st.sidebar.selectbox(
+    "Select Programming Language",
+    options=["Python", "Java", "C++"]
+)
+
+
+Adds a sidebar dropdown where user can choose a programming language (Python, Java, C++).
+
+query_lang = """
+SELECT sr.student_id, sr.student_name, sr.student_age, sr.student_gender,
+       sr.student_email, ps.language, ps.problems_solved, ps.latest_project_score
+FROM student_records sr
+JOIN programming_skills ps ON sr.student_id = ps.student_id
+WHERE ps.language = %s
+"""
+
+
+SQL query: Get student details + coding skills filtered by the selected language.
+
+df_lang = execute_query(query_lang, (selected_language,))
+st.subheader(f"Students with {selected_language} as Programming Language")
+st.dataframe(df_lang)
+
+
+Executes the query and displays result in a table inside Streamlit.
+
+5. Predefined Reports (Top 10 Queries)
+queries = {
+    "1. View All Students": "SELECT * FROM student_records;",
+    ...
+    "10. Students from City 'Chennai' Studying Java": """
+        SELECT sr.student_name, sr.student_city, ps.language
+        FROM student_records sr
+        JOIN programming_skills ps ON sr.student_id = ps.student_id
+        WHERE sr.student_city = 'Chennai' AND ps.language = 'Java';
+    """
+}
+
+
+Dictionary of 10 useful SQL queries:
+
+View all students
+
+Python programmers only
+
+Top 10 by problem solving
+
+Internship experience
+
+Placed with >10 LPA package
+
+Excellent soft skills (>8 in all)
+
+Final year students (2023)
+
+Cleared more than 3 interview rounds
+
+Project score < 50
+
+From Chennai + Java
+
+6. Query Explorer
+selected_query = st.selectbox("Choose a Report:", list(queries.keys()))
+
+if st.button("Run Query"):
+    with st.spinner("Executing..."):
+        df = execute_query(queries[selected_query])
+        st.success("Query executed successfully!")
+        st.dataframe(df)
+
+
+Dropdown menu → lets the user select a query by name.
+
+Run Query button → executes SQL and displays the result in a table.
+
+Shows a spinner while loading.
+
+🎯 What You Have Built
+
+✅ A Placement Dashboard where users can:
+
+Filter students by programming language.
+
+Run 10 predefined reports (placements, skills, interviews, packages, etc.).
+
+Explore data interactively with a nice UI.
